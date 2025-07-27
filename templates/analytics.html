@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytics - AI Social Media Agent</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100">
+    <div class="min-h-screen">
+        <!-- Navigation -->
+        <nav class="bg-blue-600 text-white p-4">
+            <div class="container mx-auto flex justify-between items-center">
+                <h1 class="text-2xl font-bold">🤖 AI Social Media Agent</h1>
+                <div class="flex space-x-4">
+                    <a href="/" class="hover:bg-blue-700 px-3 py-2 rounded">Dashboard</a>
+                    <a href="/content" class="hover:bg-blue-700 px-3 py-2 rounded">Content</a>
+                    <a href="/analytics" class="bg-blue-700 px-3 py-2 rounded">Analytics</a>
+                    <a href="/settings" class="hover:bg-blue-700 px-3 py-2 rounded">Settings</a>
+                </div>
+            </div>
+        </nav>
+
+        <div class="container mx-auto p-6">
+            <h1 class="text-3xl font-bold mb-8">Analytics & Performance</h1>
+            
+            <!-- Summary Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-blue-100 text-blue-800">
+                            <i class="fas fa-share-alt"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm text-gray-600">Total Posts (30 days)</p>
+                            <p class="text-2xl font-semibold">{{ stats.total_posts }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-green-100 text-green-800">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm text-gray-600">Successful Posts</p>
+                            <p class="text-2xl font-semibold">{{ stats.successful_posts }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-red-100 text-red-800">
+                            <i class="fas fa-times-circle"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm text-gray-600">Failed Posts</p>
+                            <p class="text-2xl font-semibold">{{ stats.failed_posts }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-purple-100 text-purple-800">
+                            <i class="fas fa-percentage"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm text-gray-600">Success Rate</p>
+                            <p class="text-2xl font-semibold">
+                                {% if stats.total_posts > 0 %}
+                                    {{ "%.1f"|format((stats.successful_posts / stats.total_posts) * 100) }}%
+                                {% else %}
+                                    0.0%
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Row -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                <!-- Platform Distribution -->
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h2 class="text-xl font-semibold mb-4">Posts by Platform</h2>
+                    <canvas id="platformChart" width="400" height="200"></canvas>
+                </div>
+
+                <!-- Success Rate by Platform -->
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h2 class="text-xl font-semibold mb-4">Success Rate by Platform</h2>
+                    <canvas id="successChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+
+            <!-- Platform Statistics Table -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-xl font-semibold mb-4">Platform Performance Details</h2>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full table-auto">
+                        <thead>
+                            <tr class="bg-gray-50">
+                                <th class="px-4 py-2 text-left">Platform</th>
+                                <th class="px-4 py-2 text-left">Total Posts</th>
+                                <th class="px-4 py-2 text-left">Successful</th>
+                                <th class="px-4 py-2 text-left">Failed</th>
+                                <th class="px-4 py-2 text-left">Success Rate</th>
+                                <th class="px-4 py-2 text-left">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for platform, platform_stats in platform_stats.items() %}
+                            <tr class="border-t">
+                                <td class="px-4 py-2">
+                                    <span class="inline-block bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">
+                                        {{ platform.title() }}
+                                    </span>
+                                </td>
+                                <td class="px-4 py-2">{{ platform_stats.total_posts }}</td>
+                                <td class="px-4 py-2 text-green-600">{{ platform_stats.successful_posts }}</td>
+                                <td class="px-4 py-2 text-red-600">{{ platform_stats.failed_posts }}</td>
+                                <td class="px-4 py-2">
+                                    {% if platform_stats.total_posts > 0 %}
+                                        {% set success_rate = (platform_stats.successful_posts / platform_stats.total_posts) * 100 %}
+                                        <span class="{% if success_rate >= 80 %}text-green-600{% elif success_rate >= 60 %}text-yellow-600{% else %}text-red-600{% endif %}">
+                                            {{ "%.1f"|format(success_rate) }}%
+                                        </span>
+                                    {% else %}
+                                        <span class="text-gray-500">N/A</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-4 py-2">
+                                    {% if platform_stats.total_posts > 0 %}
+                                        <span class="text-green-600">✅ Active</span>
+                                    {% else %}
+                                        <span class="text-gray-500">⏸️ Inactive</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Platform Distribution Chart
+        const platformCtx = document.getElementById('platformChart').getContext('2d');
+        const platformData = {
+            labels: [{% for platform in platform_stats.keys() %}'{{ platform.title() }}'{{ ',' if not loop.last }}{% endfor %}],
+            datasets: [{
+                data: [{% for platform_stats in platform_stats.values() %}{{ platform_stats.total_posts }}{{ ',' if not loop.last }}{% endfor %}],
+                backgroundColor: [
+                    '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'
+                ],
+                borderWidth: 2,
+                borderColor: '#ffffff'
+            }]
+        };
+
+        new Chart(platformCtx, {
+            type: 'doughnut',
+            data: platformData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+
+        // Success Rate Chart
+        const successCtx = document.getElementById('successChart').getContext('2d');
+        const successData = {
+            labels: [{% for platform in platform_stats.keys() %}'{{ platform.title() }}'{{ ',' if not loop.last }}{% endfor %}],
+            datasets: [{
+                label: 'Success Rate (%)',
+                data: [{% for platform_stats in platform_stats.values() %}{{ ((platform_stats.successful_posts / platform_stats.total_posts) * 100) if platform_stats.total_posts > 0 else 0 }}{{ ',' if not loop.last }}{% endfor %}],
+                backgroundColor: 'rgba(59, 130, 246, 0.8)',
+                borderColor: 'rgba(59, 130, 246, 1)',
+                borderWidth: 2
+            }]
+        };
+
+        new Chart(successCtx, {
+            type: 'bar',
+            data: successData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: {
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+
+        // Auto-refresh data every 5 minutes
+        setInterval(() => {
+            location.reload();
+        }, 300000);
+    </script>
+</body>
+</html>
